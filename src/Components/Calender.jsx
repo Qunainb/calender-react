@@ -6,7 +6,7 @@ import startOfWeek from "date-fns/startOfWeek";
 import getDay from "date-fns/getDay";
 import enUS from "date-fns/locale/en-US";
 import { reminderStore } from "../store";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const locales = {
   "en-US": enUS,
@@ -24,6 +24,8 @@ export const MyCalendar = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [remindertext, setReminderText] = useState("");
 
+  const [weather, setWeather] = useState();
+
   const reminders = reminderStore((state) => state.reminders);
   const addReminder = reminderStore((state) => state.addReminder);
 
@@ -40,6 +42,31 @@ export const MyCalendar = () => {
         allDay: true,
       }))
   );
+
+  useEffect(() => {
+    async function fetchWeather() {
+      const response = await fetch(
+        "http://api.weatherstack.com/current?access_key=36944985d0b512bd4003a131d4346fab&query=Srinagar"
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch weather");
+      }
+
+      const data = await response.json();
+
+      setWeather(data);
+    }
+
+    if (
+      selectedDate &&
+      format(selectedDate, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd")
+    ) {
+      fetchWeather();
+    } else {
+      setWeather(null);
+    }
+  }, [selectedDate]);
 
   return (
     <div>
@@ -77,6 +104,16 @@ export const MyCalendar = () => {
           </button>
         </div>
       )}
+      <div>
+        {weather ? (
+          <div>
+            <p>🌤️ Temperature: {weather.current.temperature}°C</p>
+            <p>☁️ Condition: {weather.current.weather_descriptions[0]}</p>
+          </div>
+        ) : (
+          <p>No weather data for this date.</p>
+        )}
+      </div>
     </div>
   );
 };
